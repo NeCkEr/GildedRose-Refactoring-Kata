@@ -1,8 +1,76 @@
+'use strict'
+
+function updateNormalItem () {
+  if ((this.sellIn === 0) && (this.quality ===0)) return;
+
+  this.sellIn -= 1;
+  this.quality -= 1;
+  
+  if (this.sellIn <= 0) this.quality -= 1; // Once sellIn has passed, Quality degrades twice as fast
+  
+  if (this.sellIn < 0) this.sellIn = 0;
+  if (this.quality < 0) this.quality = 0;
+  if (this.quality > 50) this.quality = 50;
+}
+
+function updateAgedBrie () {
+  if ((this.sellIn === 0) && (this.quality === 50)) return;
+
+  this.sellIn -= 1; //to confirm if a brie as a sellIn date...
+  this.quality += 1;
+  
+  if (this.sellIn < 0) this.sellIn = 0;
+  if (this.quality < 0) this.quality = 0;
+  if (this.quality > 50) this.quality = 50;
+}
+
+function updateSulfuras() {
+  return; // is all good! legendary item!
+}
+
+function updateBackStagePasses() {
+  if ((this.sellIn === 0) && (this.quality === 50)) return;
+
+  this.sellIn -= 1; //to confirm if a brie as a sellIn date...
+  this.quality += 1;
+  
+  if (this.sellIn <= 10) this.quality += 1; // Quality increases by 2 when there are 10 days or less
+  if (this.sellIn <= 5) this.quality += 1; // Quality increases by 3 when there are 5 days or less
+  
+  
+  if (this.sellIn < 0) this.sellIn = 0;
+  if (this.sellIn === 0) this.quality = 0; // Quality drops to 0 after the concert
+  if (this.quality > 50) this.quality = 50;
+}
+
+function updateConjuredItem () {
+  if ((this.sellIn === 0) && (this.quality ===0)) return;
+
+  this.sellIn -= 1;
+  this.quality -= 2; //"Conjured" items degrade in Quality twice as fast as normal items
+  
+  if (this.sellIn <= 0) this.quality -= 1; // TODO confirm if  also degrades faster when sellIn date has passed
+  
+  if (this.sellIn < 0) this.sellIn = 0;
+  if (this.quality < 0) this.quality = 0;
+  if (this.quality > 50) this.quality = 50;
+}
+
+function findItemUpdateType(that) {
+  let {name} = that;
+  if (name.match("Aged Brie")) return updateAgedBrie.bind(that);
+  if (name.match("Sulfuras")) return updateSulfuras.bind(that);
+  if (name.match("Backstage passes")) return updateBackStagePasses.bind(that);
+  if (name.match("Conjured")) return updateConjuredItem.bind(that);
+  return updateNormalItem.bind(that);
+}
+
 class Item {
   constructor(name, sellIn, quality){
     this.name = name;
     this.sellIn = sellIn;
     this.quality = quality;
+    this.updateFn = findItemUpdateType(this);
   }
 }
 
@@ -12,51 +80,9 @@ class Shop {
   }
   updateQuality() {
     for (var i = 0; i < this.items.length; i++) {
-      if (this.items[i].name != 'Aged Brie' && this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-        if (this.items[i].quality > 0) {
-          if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-            this.items[i].quality = this.items[i].quality - 1;
-          }
-        }
-      } else {
-        if (this.items[i].quality < 50) {
-          this.items[i].quality = this.items[i].quality + 1;
-          if (this.items[i].name == 'Backstage passes to a TAFKAL80ETC concert') {
-            if (this.items[i].sellIn < 11) {
-              if (this.items[i].quality < 50) {
-                this.items[i].quality = this.items[i].quality + 1;
-              }
-            }
-            if (this.items[i].sellIn < 6) {
-              if (this.items[i].quality < 50) {
-                this.items[i].quality = this.items[i].quality + 1;
-              }
-            }
-          }
-        }
-      }
-      if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-        this.items[i].sellIn = this.items[i].sellIn - 1;
-      }
-      if (this.items[i].sellIn < 0) {
-        if (this.items[i].name != 'Aged Brie') {
-          if (this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-            if (this.items[i].quality > 0) {
-              if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-                this.items[i].quality = this.items[i].quality - 1;
-              }
-            }
-          } else {
-            this.items[i].quality = this.items[i].quality - this.items[i].quality;
-          }
-        } else {
-          if (this.items[i].quality < 50) {
-            this.items[i].quality = this.items[i].quality + 1;
-          }
-        }
-      }
+      this.items[i].updateFn();
     }
-
     return this.items;
   }
 }
+
